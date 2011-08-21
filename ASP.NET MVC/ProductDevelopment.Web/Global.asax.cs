@@ -13,21 +13,23 @@ namespace ProductDevelopment.Web
 {
     public class MvcApplication : HttpApplication
     {
+        private IKernel kernel; 
         protected void Application_Start()
         {
-            var kernel = new StandardKernel();
+            kernel = new StandardKernel();
 
             Database.SetInitializer(new SeedData()); //Do not include in release/production
 
             AreaRegistration.RegisterAllAreas();
-            RegisterGlobalFilters(GlobalFilters.Filters);
-            RegisterRoutes(RouteTable.Routes);
             RegisterDependencyResolver(kernel);
+            RegisterGlobalFilters(GlobalFilters.Filters, kernel); 
+            RegisterRoutes(RouteTable.Routes);
         }
 
-        private static void RegisterGlobalFilters(GlobalFilterCollection filters)
+        private static void RegisterGlobalFilters(GlobalFilterCollection filters, IKernel kernel)
         {
             filters.Add(new HandleErrorAttribute());
+            filters.Add(kernel.TryGet(typeof(UserProviderFilterAttribute)));
         }
 
         private static void RegisterRoutes(RouteCollection routes)
@@ -48,6 +50,7 @@ namespace ProductDevelopment.Web
             kernel.Bind<IRepository<Defect>>().To<Repository<Defect>>().InRequestScope();
             kernel.Bind<IRepository<Project>>().To<Repository<Project>>().InRequestScope();
             kernel.Bind<IRepository<Severity>>().To<Repository<Severity>>().InRequestScope();
+            kernel.Bind<UserProviderFilterAttribute>().To<UserProviderFilterAttribute>();
             DependencyResolver.SetResolver(new NinjectDependencyResolver(kernel));
         }
     }
